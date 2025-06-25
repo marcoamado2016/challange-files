@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 require('dotenv').config({ path: `${__dirname}/.env` });
 const compression = require('compression');
-const mongoose = require('mongoose');
 const morgan = require('morgan');
 const express = require('express');
-const route = require('./src/route');
+const route = require('./src/interfaces/http/route');
+const { connecionDB } = require('./src/infrastructura/db/connection');
 
 morgan.token('host', (req) => req.headers.host);
 morgan.token('worker', () => process.pid);
@@ -13,34 +13,13 @@ const app = express();
 
 const PORT = process.env.PORT || 3010;
 
-/* MLAB */
-const mongoDB = process.env.MONGODB_URL;
-const options = {
-    keepAlive: true,
-    keepAliveInitialDelay: 300000,
-    connectTimeoutMS: 30000,
-    autoIndex: false,
-    socketTimeoutMS: 30000,
-};
+connecionDB().then((data) => {
+    console.log("Conexion con la base exitosa")
+})
+    .catch((error) => {
+        console.log("Error ", error)
+    })
 
-if (process.env.MONGODB_USER) {
-    options.user = process.env.MONGODB_USER;
-    options.pass = process.env.MONGODB_PASSWORD;
-}
-
-if (process.env.MONGODB_AUTHDB) {
-    options.authSource = process.env.MONGODB_AUTHDB;
-}
-
-mongoose.set('strictQuery', false);
-
-mongoose.connect(mongoDB, options);
-mongoose.Promise = global.Promise;
-const db = mongoose.connection;
-db.on('error', (err) => console.error(err));
-/* MLAB */
-
-/* REST CONFIG */
 app.set('view engine', 'ejs');
 app.set('trust proxy', true);
 app.use(express.urlencoded({ extended: false, parameterLimit: 100000, limit: '100mb' }));
